@@ -22,9 +22,16 @@ export default class ProcessServer {
     this.scan = this.scan.bind(this);
 
     this.scan();
-    setInterval(this.scan, 5000);
+    this.scanTimer = setInterval(this.scan, 5000);
 
     log('started');
+  }
+
+  stop() {
+    if (this.scanTimer) {
+      clearInterval(this.scanTimer);
+      this.scanTimer = null;
+    }
   }
 
   async scan() {
@@ -89,6 +96,8 @@ export default class ProcessServer {
       if (!ids.includes(id)) {
         log('lost game!', names[id]);
         delete timestamps[id];
+        delete names[id];
+        delete pids[id];
 
         this.handlers.message({
           socketId: id

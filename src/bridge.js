@@ -6,7 +6,11 @@ import { WebSocketServer } from 'ws';
 // basic bridge to pass info onto webapp
 let lastMsg = {};
 export const send = msg => {
-  lastMsg[msg.socketId] = msg;
+  if (msg?.activity == null) {
+    delete lastMsg[msg?.socketId];
+  } else {
+    lastMsg[msg.socketId] = msg;
+  }
   wss.clients.forEach(x => x.send(JSON.stringify(msg)));
 };
 
