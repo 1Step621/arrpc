@@ -5,7 +5,6 @@ import { EventEmitter } from 'events';
 
 import IPCServer from './transports/ipc.js';
 import WSServer from './transports/websocket.js';
-import ProcessServer from './process/index.js';
 
 let socketId = 0;
 export default class RPCServer extends EventEmitter {
@@ -23,7 +22,10 @@ export default class RPCServer extends EventEmitter {
     this.ipc = await new IPCServer(handlers);
     this.ws = await new WSServer(handlers);
 
-    if (!process.argv.includes('--no-process-scanning') && !process.env.ARRPC_NO_PROCESS_SCANNING) this.process = await new ProcessServer(handlers);
+    if (!process.argv.includes('--no-process-scanning') && !process.env.ARRPC_NO_PROCESS_SCANNING) {
+      const { default: ProcessServer } = await import('./process/index.js');
+      this.process = await new ProcessServer(handlers);
+    }
 
     return this;
   })(); }

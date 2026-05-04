@@ -6,13 +6,26 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DetectableDB = JSON.parse(fs.readFileSync(join(__dirname, 'detectable.json'), 'utf8'));
+let DetectableDB = JSON.parse(fs.readFileSync(join(__dirname, 'detectable.json'), 'utf8'));
+DetectableDB = DetectableDB.map(({ executables, id, name }) => {
+  if (!executables?.length) return null;
+  const filteredExecutables = executables
+    .filter(x => !x.os || x.os === process.platform)
+    .map(x => ({
+      name: x.name,
+      is_launcher: x.is_launcher,
+      arguments: x.arguments
+    }));
+  if (!filteredExecutables.length) return null;
+  return { executables: filteredExecutables, id, name };
+}).filter(Boolean);
 
 import * as Natives from './native/index.js';
 const Native = Natives[process.platform];
 
 
 const timestamps = {}, names = {}, pids = {};
+const MAX_PROCESSES = parseInt(process.env.ARRPC_PROCESS_SCAN_LIMIT || '', 10);
 export default class ProcessServer {
   constructor(handlers) {
     if (!Native) return; // log('unsupported platform:', process.platform);
@@ -37,6 +50,9 @@ export default class ProcessServer {
   async scan() {
     // const startTime = performance.now();
     const processes = await Native.getProcesses();
+    if (Number.isFinite(MAX_PROCESSES) && MAX_PROCESSES > 0 && processes.length > MAX_PROCESSES) {
+      processes.length = MAX_PROCESSES;
+    }
     const ids = [];
 
     // log(`got processed in ${(performance.now() - startTime).toFixed(2)}ms`);
